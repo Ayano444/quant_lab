@@ -123,23 +123,50 @@ def global_min_variance(returns: pd.DataFrame) -> np.ndarray:
 
 def max_sharpe_ratio(returns: pd.DataFrame, risk_free_rate: float = 0.02) -> np.ndarray:
     """
-    Computes the maximum Sharpe ratio portfolio.
+    Computes the maximum Sharpe ratio portfolio in a DCP-compliant way.
+    Method:
+    - Sweep target returns
+    - Solve a convex optimization for each (min variance)
+    - Compute Sharpe for each solution
+    - Pick the best one
     """
     n = returns.shape[1]
     mean_ret = returns.mean().values * 252
     cov = returns.cov().values * 252
 
-    w = cp.Variable(n)
-    portfolio_return = mean_ret @ w
-    portfolio_variance = cp.quad_form(w, cov)
+    target_grid = np.linspace(mean_ret.min(), mean_ret.max(), 50)
 
-    objective = cp.Maximize((portfolio_return - risk_free_rate) / cp.sqrt(portfolio_variance))
-    constraints = [cp.sum(w) == 1, w >= 0]
+    best_sharpe = -1
+    best_weights = None
 
-    prob = cp.Problem(objective, constraints)
-    prob.solve()
+    for target in target_grid:
+        w = cp.Variable(n)
+        variance = cp.quad_form(w, cov)
+        constraints = [
+            cp.sum(w) == 1,
+            mean_ret @ w == target,
+            w >= 0
+        ]
+        prob = cp.Problem(cp.Minimize(variance), constraints)
 
-    return w.value
+        try:
+            prob.solve()
+            if w.value is None:
+                continue
+
+            vol = np.sqrt(prob.value)
+            ret = target
+            sharpe = (ret - risk_free_rate) / vol
+
+            if sharpe > best_sharpe:
+                best_sharpe = sharpe
+                best_weights = w.value
+
+        except:
+            continue
+
+    return best_weights
+
 
 
 def efficient_frontier(returns: pd.DataFrame, target_returns: np.ndarray):
