@@ -60,3 +60,39 @@ def sharpe_ratio(weights: np.ndarray, returns: pd.DataFrame, risk_free_rate: flo
     return (rp - risk_free_rate) / sigma
 
 
+# ===========================
+# EFFICIENT FRONTIER HELPERS
+# ===========================
+
+def generate_random_weights(n_assets: int) -> np.ndarray:
+    """
+    Generates random portfolio weights that sum to 1.
+    Useful for Monte Carlo sampling of portfolios.
+    """
+    w = np.random.random(n_assets)
+    return w / w.sum()
+
+
+def random_portfolio_performance(returns: pd.DataFrame, n_samples: int = 5000):
+    """
+    Generates random portfolios and returns:
+    - list of returns
+    - list of volatilities
+    - list of weights
+    """
+    n_assets = returns.shape[1]
+
+    rets = []
+    vols = []
+    wts = []
+
+    for _ in range(n_samples):
+        w = generate_random_weights(n_assets)
+        r = portfolio_return(w, returns)
+        v = portfolio_std(w, returns)
+
+        rets.append(r)
+        vols.append(v)
+        wts.append(w)
+
+    return np.array(rets), np.array(vols), wts
