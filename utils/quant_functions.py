@@ -172,3 +172,57 @@ def efficient_frontier(returns: pd.DataFrame, target_returns: np.ndarray):
 
     return np.array(vols), weights_list
 
+import matplotlib.pyplot as plt
+
+# ===========================
+# PLOTTING UTILITIES
+# ===========================
+
+def plot_random_portfolios(returns, n_samples=5000):
+    """
+    Plots random portfolios based on Monte Carlo sampling.
+    """
+    rets, vols, _ = random_portfolio_performance(returns, n_samples)
+
+    plt.figure(figsize=(10, 6))
+    plt.scatter(vols, rets, alpha=0.3, s=10)
+    plt.xlabel("Volatility (Std Dev)")
+    plt.ylabel("Return")
+    plt.title("Random Portfolios")
+    plt.grid(True)
+
+
+def plot_efficient_frontier(returns):
+    """
+    Plots the efficient frontier along with GMV and Max Sharpe portfolios.
+    """
+    # Random portfolios for background
+    rets, vols, _ = random_portfolio_performance(returns, 3000)
+
+    # Optimization results
+    gmv = global_min_variance(returns)
+    msr = max_sharpe_ratio(returns)
+
+    gmv_ret = portfolio_return(gmv, returns)
+    gmv_vol = portfolio_std(gmv, returns)
+
+    msr_ret = portfolio_return(msr, returns)
+    msr_vol = portfolio_std(msr, returns)
+
+    # Frontier targets
+    target_returns = np.linspace(rets.min(), rets.max(), 50)
+    ef_vols, _ = efficient_frontier(returns, target_returns)
+
+    # Plotting
+    plt.figure(figsize=(10, 6))
+    plt.scatter(vols, rets, alpha=0.2, s=10, label="Random Portfolios")
+    plt.plot(ef_vols, target_returns, color="red", linewidth=2, label="Efficient Frontier")
+    plt.scatter(gmv_vol, gmv_ret, color="green", s=80, label="GMV Portfolio")
+    plt.scatter(msr_vol, msr_ret, color="blue", s=80, label="Max Sharpe Portfolio")
+
+    plt.xlabel("Volatility (Std Dev)")
+    plt.ylabel("Return")
+    plt.title("Efficient Frontier with GMV & Max Sharpe Portfolios")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
