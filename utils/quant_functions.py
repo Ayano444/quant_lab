@@ -96,3 +96,79 @@ def random_portfolio_performance(returns: pd.DataFrame, n_samples: int = 5000):
         wts.append(w)
 
     return np.array(rets), np.array(vols), wts
+
+import cvxpy as cp
+
+# ===========================
+# PORTFOLIO OPTIMIZATION
+# ===========================
+
+def global_min_variance(returns: pd.DataFrame) -> np.ndarray:
+    """
+    Computes the Global Minimum Variance (GMV) portfolio.
+    Minimizes portfolio volatility with the constraint sum(weights)=1.
+    """
+    n = returns.shape[1]
+    cov = returns.cov().values * 252  # annualized covariance
+
+    w = cp.Variable(n)
+    objective = cp.quad_form(w, cov)  # variance
+    constraints = [cp.sum(w) == 1, w >= 0]
+
+    prob = cp.Problem(cp.Minimize(objective), constraints)
+    prob.solve()
+
+    return w.value
+
+
+def max_sharpe_ratio(returns: pd.DataFrame, risk_free_rate: float = 0.02) -> np.ndarray:
+    """
+    Computes the maximum Sharpe ratio portfolio.
+    """
+    n = returns.shape[1]
+    mean_ret = returns.mean().values * 252
+    cov = returns.cov().values * 252
+
+    w = cp.Variable(n)
+    portfolio_return = mean_ret @ w
+    portfolio_variance = cp.quad_form(w, cov)
+
+    objective = cp.Maximize((portfolio_return - risk_free_rate) / cp.sqrt(portfolio_variance))
+    constraints = [cp.sum(w) == 1, w >= 0]
+
+    prob = cp.Problem(objective, constraints)
+    prob.solve()
+
+    return w.value
+
+
+def efficient_frontier(returns: pd.DataFrame, target_returns: np.ndarray):
+    """
+    Builds the efficient frontier for a set of target returns.
+    Returns: list of volatilities, weights for each target return.
+    """
+    n = returns.shape[1]
+    mean_ret = returns.mean().values * 252
+    cov = returns.cov().values * 252
+
+    vols = []
+    weights_list = []
+
+    for target in target_returns:
+        w = cp.Variable(n)
+
+        objective = cp.quad_form(w, cov)
+        constraints = [
+            cp.sum(w) == 1,
+            mean_ret @ w == target,
+            w >= 0
+        ]
+
+        prob = cp.Problem(cp.Minimize(objective), constraints)
+        prob.solve()
+
+        vols.append(np.sqrt(prob.value))
+        weights_list.append(w.value)
+
+    return np.array(vols), weights_list
+
