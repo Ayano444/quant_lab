@@ -219,7 +219,7 @@ def plot_random_portfolios(returns, n_samples=5000):
     plt.grid(True)
 
 
-def plot_efficient_frontier(returns):
+def plot_efficient_frontier(returns, save_path=None):
     """
     Plots the efficient frontier along with GMV and Max Sharpe portfolios.
     """
@@ -250,6 +250,10 @@ def plot_efficient_frontier(returns):
     plt.xlabel("Volatility (Std Dev)")
     plt.ylabel("Return")
     plt.title("Efficient Frontier with GMV & Max Sharpe Portfolios")
+    
+
     plt.legend()
     plt.grid(True)
+    if save_path is not None:
+        plt.savefig(save_path, dpi=300, bbox_inches="tight")
     plt.show()
