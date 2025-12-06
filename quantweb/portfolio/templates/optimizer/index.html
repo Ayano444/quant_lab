@@ -1,0 +1,415 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Optimization Suite - QuantLab</title>
+    <style>
+        /* Dark theme base with enhanced gradients */
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a2e 50%, #16213e 100%);
+            color: #e0e0e0;
+            display: flex;
+            min-height: 100vh;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Animated background particles for creativity */
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: radial-gradient(circle at 20% 80%, rgba(0, 212, 255, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 80% 20%, rgba(138, 43, 226, 0.1) 0%, transparent 50%),
+                              radial-gradient(circle at 40% 40%, rgba(255, 69, 0, 0.05) 0%, transparent 50%);
+            animation: float 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background: linear-gradient(180deg, #16213e 0%, #0f3460 100%);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.7);
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            z-index: 100;
+            border-right: 1px solid rgba(0, 212, 255, 0.2);
+        }
+
+        .sidebar h2 {
+            color: #00d4ff;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar li {
+            margin-bottom: 10px;
+        }
+
+        .sidebar a {
+            color: #e0e0e0;
+            text-decoration: none;
+            display: block;
+            padding: 10px;
+            border-radius: 5px;
+            transition: all 0.3s;
+        }
+
+        .sidebar a:hover {
+            background: linear-gradient(90deg, #0f3460, #1a1a2e);
+            color: #00d4ff;
+            transform: translateX(5px);
+        }
+
+        .sidebar a.external::after {
+            content: " ↗";
+        }
+
+        /* Main content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Hero section with enhanced visuals */
+        .hero {
+            text-align: center;
+            padding: 100px 20px;
+            background: rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 300px;
+            height: 300px;
+            background: radial-gradient(circle, rgba(0, 212, 255, 0.1) 0%, transparent 70%);
+            transform: translate(-50%, -50%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.3; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+            color: #00d4ff;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero p {
+            font-size: 1.3rem;
+            margin-bottom: 40px;
+            color: #b0b0b0;
+            position: relative;
+            z-index: 1;
+        }
+
+        .divider {
+            width: 250px;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #00d4ff, #8a2be2, transparent);
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* Cards section - horizontal layout */
+        .cards-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 60px 20px;
+            position: relative;
+        }
+
+        .cards-container {
+            display: flex;
+            flex-direction: row;
+            gap: 40px;
+            justify-content: center;
+            align-items: stretch;
+            flex-wrap: wrap;
+        }
+
+        .card {
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.02) 100%);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 0;
+            width: 320px;
+            text-align: center;
+            transition: all 0.4s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+            backdrop-filter: blur(15px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card-content {
+            padding: 40px 30px;
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 212, 255, 0.2), transparent);
+            transition: left 0.5s;
+        }
+
+        .card:hover::before {
+            left: 100%;
+        }
+
+        .card:hover {
+            transform: translateY(-15px) scale(1.05);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.5);
+            text-decoration: none;
+            color: inherit;
+            border-color: #00d4ff;
+        }
+
+        .card-icon {
+            font-size: 4rem;
+            margin-bottom: 20px;
+            color: #00d4ff;
+            transition: color 0.3s;
+        }
+
+        .card:hover .card-icon {
+            color: #8a2be2;
+        }
+
+        .card h3 {
+            font-size: 1.6rem;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+
+        .card p {
+            color: #b0b0b0;
+            line-height: 1.6;
+        }
+
+        /* Background formulas with more creativity */
+        .background-formulas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+            opacity: 0.08;
+            font-size: 2.5rem;
+            color: #00d4ff;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            align-items: center;
+            z-index: -1;
+        }
+
+        .formula {
+            transform: rotate(-5deg);
+            animation: drift 15s linear infinite;
+        }
+
+        .formula:nth-child(2) {
+            transform: rotate(5deg);
+            animation: drift 15s linear infinite reverse;
+        }
+
+        .formula:nth-child(3) {
+            transform: rotate(-10deg);
+            animation: drift 15s linear infinite;
+        }
+
+        @keyframes drift {
+            0% { transform: translateX(0) rotate(var(--rotation)); }
+            100% { transform: translateX(100px) rotate(var(--rotation)); }
+        }
+
+        /* Footer with subtle enhancement */
+        .footer {
+            text-align: center;
+            padding: 30px;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.1) 100%);
+            color: #b0b0b0;
+            position: relative;
+        }
+
+        .footer::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 80%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00d4ff, transparent);
+            transform: translateX(-50%);
+        }
+
+        .footer a {
+            color: #00d4ff;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+
+        .footer a:hover {
+            color: #8a2be2;
+            text-decoration: underline;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1024px) {
+            .cards-container {
+                gap: 20px;
+            }
+            .card {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            .main-content {
+                margin-left: 200px;
+            }
+            .hero h1 {
+                font-size: 2.5rem;
+            }
+            .cards-container {
+                flex-direction: column;
+                align-items: center;
+            }
+            .card {
+                width: 100%;
+                max-width: 320px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                height: auto;
+                position: relative;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+            .hero {
+                padding: 60px 20px;
+            }
+            .hero h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <h2>QuantLab</h2>
+        <ul>
+            <li><a href="{% url 'home' %}" class="back-btn">Back to Home</a></li>
+            <li><a href="{% url 'classic_optimizer' %}">Classic Optimizer</a></li>
+            <li><a href="{% url 'risk_parity_optimizer' %}">Risk Parity</a></li>
+            <li><a href="{% url 'hrp_optimizer' %}">Hierarchical Risk Parity</a></li>
+            <li><a href="https://github.com/Ayano444" class="external" target="_blank">GitHub</a></li>
+        </ul>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Hero Section -->
+        <div class="hero">
+            <h1>Portfolio Optimization Suite</h1>
+            <p>Algorithmic frameworks for constructing intelligent portfolios.</p>
+            <div class="divider"></div>
+        </div>
+
+        <!-- Cards Section -->
+        <div class="cards-section">
+            <div class="background-formulas">
+                <div class="formula" style="--rotation: -5deg;">σ² = wᵀΣw</div>
+                <div class="formula" style="--rotation: 5deg;">μₚ = wᵀμ</div>
+                <div class="formula" style="--rotation: -10deg;">Sharpe = (μₚ - r_f) / σₚ</div>
+            </div>
+            <div class="cards-container">
+                <a href="{% url 'classic_optimizer' %}" class="card">
+                    <div class="card-content">
+                        <div class="card-icon">📊</div>
+                        <h3>Classic Optimizer</h3>
+                        <p>Optimize portfolios using Global Minimum Variance and Maximum Sharpe Ratio strategies. Input tickers, dates, and risk-free rates for efficient frontier analysis.</p>
+                    </div>
+                </a>
+                <a href="{% url 'risk_parity_optimizer' %}" class="card">
+                    <div class="card-content">
+                        <div class="card-icon">⚖️</div>
+                        <h3>Risk Parity</h3>
+                        <p>Balance risk across assets by allocating based on volatility. Achieve diversified portfolios with equal risk contributions for stable performance.</p>
+                    </div>
+                </a>
+                <a href="{% url 'hrp_optimizer' %}" class="card">
+                    <div class="card-content">
+                        <div class="card-icon">🌳</div>
+                        <h3>Hierarchical Risk Parity</h3>
+                        <p>Use hierarchical clustering to group assets and allocate risk hierarchically. Ideal for complex portfolios with correlated assets.</p>
+                    </div>
+                </a>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="footer">
+            Built by Mannu · <a href="https://github.com/Ayano444" target="_blank">GitHub: Ayano444</a>
+        </div>
+    </div>
+</body>
+</html>
+```

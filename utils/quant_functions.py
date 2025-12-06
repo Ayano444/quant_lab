@@ -169,35 +169,66 @@ def max_sharpe_ratio(returns: pd.DataFrame, risk_free_rate: float = 0.02) -> np.
 
 
 
-def efficient_frontier(returns: pd.DataFrame, target_returns: np.ndarray):
+def efficient_frontier(returns, num_points=80, target_returns=None):
     """
-    Builds the efficient frontier for a set of target returns.
-    Returns: list of volatilities, weights for each target return.
+    Clean, stable efficient frontier:
+    Always smooth, monotonic, convex.
+    Returns [{"x": vol%, "y": ret%}]
     """
-    n = returns.shape[1]
-    mean_ret = returns.mean().values * 252
-    cov = returns.cov().values * 252
 
-    vols = []
-    weights_list = []
+    mu = returns.mean().values * 252      # expected annual returns (fraction)
+    cov = returns.cov().values * 252      # annual covariance
+    n = len(mu)
 
-    for target in target_returns:
-        w = cp.Variable(n)
+    w = cp.Variable(n)
+    ret = mu @ w
+    risk = cp.quad_form(w, cov)
+    base = [cp.sum(w) == 1, w >= 0]
 
-        objective = cp.quad_form(w, cov)
-        constraints = [
-            cp.sum(w) == 1,
-            mean_ret @ w == target,
-            w >= 0
+    tr_min = float(mu.min())
+    tr_max = float(mu.max())
+    eps = 1e-6
+    if target_returns is None:
+        target_grid = np.linspace(tr_min + eps, tr_max - eps, num_points)
+    else:
+        target_grid = np.asarray(list(target_returns), float)
+
+    frontier = []
+
+    for tr in target_grid:
+
+    # tolerance band to avoid infeasible equality constraints
+            # tolerance band to avoid infeasible equality constraints
+        tol = 1e-4
+
+        constraints = base + [
+            ret >= tr - tol,
+            ret <= tr + tol
         ]
 
-        prob = cp.Problem(cp.Minimize(objective), constraints)
-        prob.solve()
+        prob = cp.Problem(cp.Minimize(risk), constraints)
 
-        vols.append(np.sqrt(prob.value))
-        weights_list.append(w.value)
+        try:
+            prob.solve(solver=cp.SCS, verbose=False)
+        except Exception:
+            continue
 
-    return np.array(vols), weights_list
+        if w.value is None:
+            continue
+
+        weights = np.asarray(w.value).flatten()
+        if not np.all(np.isfinite(weights)):
+            continue
+
+        port_ret = float(mu @ weights) * 100.0
+        port_vol = float(np.sqrt(weights.T @ cov @ weights)) * 100.0
+
+        frontier.append({"x": port_vol, "y": port_ret})
+
+
+    
+
+    return frontier
 
 import matplotlib.pyplot as plt
 
@@ -222,35 +253,51 @@ def plot_random_portfolios(returns, n_samples=5000):
 def plot_efficient_frontier(returns, save_path=None):
     """
     Plots the efficient frontier along with GMV and Max Sharpe portfolios.
+    This function was updated to work with efficient_frontier() which now returns
+    a list of Chart.js-friendly points in percent units: [{"x":vol%, "y":ret%}, ...].
     """
     # Random portfolios for background
     rets, vols, _ = random_portfolio_performance(returns, 3000)
+
+    # convert to percent units for plotting consistency
+    rets_pct = np.array(rets) * 100.0
+    vols_pct = np.array(vols) * 100.0
 
     # Optimization results
     gmv = global_min_variance(returns)
     msr = max_sharpe_ratio(returns)
 
-    gmv_ret = portfolio_return(gmv, returns)
-    gmv_vol = portfolio_std(gmv, returns)
+    gmv_ret = portfolio_return(gmv, returns) * 100.0
+    gmv_vol = portfolio_std(gmv, returns) * 100.0
 
-    msr_ret = portfolio_return(msr, returns)
-    msr_vol = portfolio_std(msr, returns)
+    msr_ret = portfolio_return(msr, returns) * 100.0
+    msr_vol = portfolio_std(msr, returns) * 100.0
 
-    # Frontier targets
-    target_returns = np.linspace(rets.min(), rets.max(), 50)
-    ef_vols, _ = efficient_frontier(returns, target_returns)
+    # Frontier targets (annual returns as decimals)
+    # Correct, stable target-return grid
+    mu = returns.mean().values * 252  # annual expected returns
+
+    target_returns = np.linspace(mu.min(), mu.max(), 80)
+
+    # Correct call using keyword argument
+    ef_points = efficient_frontier(returns, target_returns=target_returns)
+
+
+    # extract vols and returns from ef_points (they are in percent)
+    ef_vols = [p['x'] for p in ef_points]
+    ef_returns = [p['y'] for p in ef_points]
 
     # Plotting
     plt.figure(figsize=(10, 6))
-    plt.scatter(vols, rets, alpha=0.2, s=10, label="Random Portfolios")
-    plt.plot(ef_vols, target_returns, color="red", linewidth=2, label="Efficient Frontier")
+    plt.scatter(vols_pct, rets_pct, alpha=0.2, s=10, label="Random Portfolios")
+    if ef_vols and ef_returns:
+        plt.plot(ef_vols, ef_returns, color="red", linewidth=2, label="Efficient Frontier")
     plt.scatter(gmv_vol, gmv_ret, color="green", s=80, label="GMV Portfolio")
     plt.scatter(msr_vol, msr_ret, color="blue", s=80, label="Max Sharpe Portfolio")
 
-    plt.xlabel("Volatility (Std Dev)")
-    plt.ylabel("Return")
+    plt.xlabel("Volatility (%)")
+    plt.ylabel("Return (%)")
     plt.title("Efficient Frontier with GMV & Max Sharpe Portfolios")
-    
 
     plt.legend()
     plt.grid(True)

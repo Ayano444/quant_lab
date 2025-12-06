@@ -1,0 +1,676 @@
+{% load custom_filters %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Portfolio Optimization Dashboard</title>
+
+    <!-- Inter font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        :root{
+            --bg-start: #0f172a;
+            --bg-end: #1e1b4b;
+            --text: #e2e8f0;
+            --muted: #94a3b8;
+            --card-bg: rgba(20,28,48,0.55);
+            --card-border: rgba(255,255,255,0.05);
+            --accent: #6366f1; /* neon frontier */
+            --gmv: #10b981;
+            --msr: #8b5cf6;
+            --assets: #f59e0b;
+            --glass-blur: 10px;
+            --radius: 12px;
+            --shadow: 0 6px 30px rgba(2,6,23,0.6);
+            font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+        }
+
+        html,body{
+            height:100%;
+            margin:0;
+            background: linear-gradient(180deg, var(--bg-start) 0%, var(--bg-end) 100%);
+            color:var(--text);
+            -webkit-font-smoothing:antialiased;
+            -moz-osx-font-smoothing:grayscale;
+            font-size:16px;
+        }
+
+        .container-app{
+            max-width:1320px;
+            margin:32px auto;
+            padding:24px;
+        }
+
+        header.app-header{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:16px;
+            margin-bottom:20px;
+        }
+
+        header .title-wrap h1{
+            margin:0;
+            font-weight:700;
+            font-size:1.5rem;
+            letter-spacing: -0.2px;
+        }
+        header .title-wrap p{
+            margin:0;
+            color:var(--muted);
+            font-size:0.95rem;
+        }
+
+        /* shared card style */
+        .card-glass{
+            background: var(--card-bg);
+            border:1px solid var(--card-border);
+            border-radius:var(--radius);
+            padding:18px;
+            backdrop-filter: blur(var(--glass-blur));
+            -webkit-backdrop-filter: blur(var(--glass-blur));
+            box-shadow: var(--shadow);
+        }
+
+        .kpi-grid{
+            display:grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap:16px;
+            margin-bottom:20px;
+        }
+
+        .kpi-card{
+            padding:18px;
+            border-radius:10px;
+            text-align:left;
+            position:relative;
+            overflow:hidden;
+        }
+
+        .kpi-label{
+            display:flex;
+            align-items:center;
+            gap:10px;
+            color:var(--muted);
+            font-weight:600;
+            font-size:0.9rem;
+            margin-bottom:8px;
+        }
+
+        .kpi-value{
+            font-weight:800;
+            font-size:1.6rem;
+            color:var(--text);
+            margin-bottom:6px;
+        }
+
+        .kpi-sub{
+            color:var(--muted);
+            font-size:0.85rem;
+        }
+
+        /* cards layout */
+        .row-cols-2-eq > [class*="col-"]{
+            display:flex;
+        }
+        .h-card{display:flex;flex-direction:column;height:100%;}
+
+        /* table styles */
+        .table-light{
+            width:100%;
+            border-collapse:collapse;
+            color:var(--text);
+            font-size:0.95rem;
+        }
+        .table-light thead th{
+            text-align:left;
+            padding:12px 14px;
+            color:var(--muted);
+            font-size:0.78rem;
+            text-transform:uppercase;
+            letter-spacing:0.06em;
+            border-bottom:1px solid rgba(255,255,255,0.04);
+            background:transparent;
+        }
+        .table-light tbody td{
+            padding:11px 14px;
+            border-bottom:1px solid rgba(255,255,255,0.03);
+        }
+
+        /* correlation table */
+        .corr-table{width:100%;overflow:auto;border-radius:8px}
+        .corr-cell{font-weight:600;border-radius:6px;padding:8px;text-align:center}
+
+        /* chart container */
+        .chart-card{padding:18px;display:flex;flex-direction:column;align-items:center;}
+        .chart-area{width:100%;max-width:980px;height:520px;margin:12px auto}
+
+        /* badges */
+        .legend-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:rgba(255,255,255,0.03);color:var(--muted);font-weight:600}
+        .legend-dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+        /* responsive tweaks */
+        @media (max-width:900px){
+            .chart-area{height:420px}
+            .chart-card{padding:14px}
+            .kpi-value{font-size:1.3rem}
+        }
+        @media (max-width:640px){
+            .container-app{padding:14px;margin:18px auto}
+            header.app-header{flex-direction:column;align-items:flex-start;gap:8px}
+            .chart-area{height:360px}
+            .kpi-grid{grid-template-columns:1fr}
+        }
+
+        /* small helpers */
+        .muted{color:var(--muted)}
+        .tiny{font-size:0.78rem}
+
+        /* Frequency toggle styling */
+        .freq-toggle { display:inline-flex; gap:6px; align-items:center }
+        .freq-toggle .freq-btn{ border-radius:999px; padding:6px 10px; background:transparent; color:var(--muted); border:1px solid rgba(255,255,255,0.06); }
+        .freq-toggle .freq-btn.active{ border-color:var(--accent); box-shadow:0 0 18px rgba(99,102,241,0.16); color:var(--text); }
+
+        /* fade transition for correlation table */
+        .corr-table {
+          display: none;
+          opacity: 0;
+          transition: opacity 0.35s ease;
+        }
+        .corr-table.visible {
+          display: table;
+          opacity: 1;
+        }
+
+        /* Button bar (glass style) placed below the chart */
+        .btn-bar {
+          display: flex;
+          justify-content: space-evenly; /* centered, evenly spaced */
+          align-items: center;
+          gap: 12px;
+          max-width: 920px;
+          margin: 18px auto;
+          padding: 8px 6px;
+        }
+
+        .btn-glass {
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+          color: var(--text);
+          padding: 10px 22px;
+          border-radius: 10px;
+          font-size: 0.9rem;
+          font-weight: 600;
+          cursor: pointer;
+          transition: box-shadow 0.18s ease, transform 0.12s ease, border-color 0.12s ease;
+          text-decoration: none;
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .btn-glass:hover {
+          box-shadow: 0 6px 20px var(--accent);
+          transform: translateY(-2px);
+          border-color: var(--accent);
+        }
+
+        .btn-glass:focus { outline: none; box-shadow: 0 0 0 3px rgba(99,102,241,0.10); }
+
+        /* Footer styling */
+        .site-footer{
+          color: var(--muted);
+          text-align: center;
+          padding: 16px;
+          margin-top: 40px;
+          font-size: 14px;
+          border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .site-footer a{ color: var(--muted); text-decoration: none; font-weight: 600; }
+        .site-footer a:hover{ color: var(--accent); text-shadow: 0 0 10px rgba(99,102,241,0.18); }
+    </style>
+</head>
+<body>
+    <div class="container-app">
+        <header class="app-header">
+            <div class="title-wrap">
+                <h1>Portfolio Optimization</h1>
+                <p class="muted">Analysis for: {{ tickers|join:", " }}</p>
+            </div>
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="legend-badge">
+                    <i class="far fa-calendar-alt"></i>
+                    <span class="tiny">{{ start_date }} to {{ end_date }}</span>
+                </span>
+                <span class="legend-badge">
+                    <i class="fas fa-percentage"></i>
+                    <span class="tiny">Risk-Free Rate: {{ risk_free_rate|floatformat:2 }}%</span>
+                </span>
+                <!-- Frequency toggle (Daily / Monthly / Annual) -->
+                <div class="freq-toggle ms-3" style="margin-left:12px">
+                  <button class="btn btn-sm freq-btn" data-freq="daily" title="Daily">D</button>
+                  <button class="btn btn-sm freq-btn" data-freq="monthly" title="Monthly">M</button>
+                  <button class="btn btn-sm freq-btn active" data-freq="annual" title="Annual">A</button>
+                </div>
+            </div>
+        </header>
+
+        <!-- KPI row -->
+        <section class="kpi-grid">
+            <div class="card-glass kpi-card">
+                <div class="kpi-label"><i class="fas fa-chart-line" style="color:var(--gmv)"></i> GMV Annual Return</div>
+                <div class="kpi-value" id="gmv-value" data-daily="{{ daily.gmv_return|floatformat:6 }}" data-annual="{{ annual.gmv_return|floatformat:6 }}">{{ annual.gmv_return|floatformat:2 }}%</div>
+                <div class="kpi-sub">Global Minimum Volatility</div>
+            </div>
+
+            <div class="card-glass kpi-card">
+                <div class="kpi-label"><i class="fas fa-bullseye" style="color:var(--msr)"></i> MSR Annual Return</div>
+                <div class="kpi-value" id="msr-value" data-daily="{{ daily.msr_return|floatformat:6 }}" data-annual="{{ annual.msr_return|floatformat:6 }}">{{ annual.msr_return|floatformat:2 }}%</div>
+                <div class="kpi-sub">Maximum Sharpe Ratio</div>
+            </div>
+
+            <div class="card-glass kpi-card">
+                <div class="kpi-label"><i class="fas fa-chart-pie" style="color:var(--accent)"></i> MSR Sharpe Ratio</div>
+                <div class="kpi-value" id="msr-sharpe" data-daily="{{ daily.msr_sharpe_ratio|floatformat:6 }}" data-annual="{{ annual.msr_sharpe_ratio|floatformat:6 }}">{{ annual.msr_sharpe_ratio|floatformat:2 }}</div>
+                <div class="kpi-sub">Risk-Adjusted Return</div>
+            </div>
+        </section>
+
+        <!-- two column content -->
+        <div class="row row-cols-1 row-cols-md-2 g-4 mb-4 row-cols-2-eq">
+            <div class="col">
+                <div class="card-glass h-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div class="card-title"><i class="fas fa-weight-hanging"></i></div>
+                            <div>
+                                <div style="font-weight:700">GMV Portfolio Weights</div>
+                                <div class="tiny muted">Global Minimum Variance portfolio</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:6px;overflow:auto">
+                        <table class="table-light">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th class="text-end">Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticker, weight in gmv.items %}
+                                <tr>
+                                    <td>{{ ticker }}</td>
+                                    <td class="text-end">{{ weight|floatformat:4 }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card-glass h-card">
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                        <div style="display:flex;align-items:center;gap:10px">
+                            <div class="card-title"><i class="fas fa-bullseye"></i></div>
+                            <div>
+                                <div style="font-weight:700">MSR Portfolio Weights</div>
+                                <div class="tiny muted">Maximum Sharpe Ratio portfolio</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:6px;overflow:auto">
+                        <table class="table-light">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th class="text-end">Weight</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for ticker, weight in msr.items %}
+                                <tr>
+                                    <td>{{ ticker }}</td>
+                                    <td class="text-end">{{ weight|floatformat:2 }}%</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Correlation matrix (heatmap table) -->
+        <div class="card-glass mb-4">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <div style="display:flex;align-items:center;gap:10px">
+                    <i class="fas fa-th" style="font-size:18px;color:var(--accent)"></i>
+                    <div>
+                        <div style="font-weight:700">Correlation Matrix</div>
+                        <div class="tiny muted">Pairwise correlations</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:8px">
+                <label style="display:flex;align-items:center;gap:8px;color:var(--muted);cursor:pointer">
+                    <input type="checkbox" id="show-corr-checkbox" style="transform:scale(1.05);margin-right:6px" />
+                    <span class="tiny">Show Correlation Matrix</span>
+                </label>
+            </div>
+
+            <div id="corr-wrapper" class="corr-table" style="display:none;opacity:0;transition:opacity .35s ease">
+                 <table class="table-light" style="min-width:420px">
+                     <thead>
+                         <tr>
+                             <th></th>
+                             {% for ticker in tickers %}
+                             <th>{{ ticker }}</th>
+                             {% endfor %}
+                         </tr>
+                     </thead>
+                     <tbody>
+                         {% for row_ticker in tickers %}
+                         <tr>
+                             <td style="font-weight:700">{{ row_ticker }}</td>
+                             {% for col_ticker in tickers %}
+                                 {% with corr_value=corr_matrix|get_item:row_ticker|get_item:col_ticker %}
+                                 <td>
+                                     <div class="corr-cell" data-value="{{ corr_value|floatformat:4 }}">{{ corr_value|floatformat:2 }}</div>
+                                 </td>
+                                 {% endwith %}
+                             {% endfor %}
+                         </tr>
+                         {% endfor %}
+                     </tbody>
+                 </table>
+             </div>
+        </div>
+
+        <!-- Efficient frontier chart (replaced) -->
+        <div class="chart-box" style="
+          background: #0f172a;
+          padding: 24px;
+          border-radius: 12px;
+          border: 1px solid rgba(255,255,255,0.06);
+          margin-bottom: 32px;
+        ">
+          <canvas id="frontierChart" style="height: 420px; width: 100%;"></canvas>
+
+          <!-- Embed JSON and numeric values safely in data-attributes to avoid template tags inside JS -->
+          <div id="frontier-data"
+               data-frontier="{{ safe_frontier|default:'[]'|escapejs }}"
+               data-assets="{{ safe_assets|default:'[]'|escapejs }}"
+               data-gmv-x="{{ annual.gmv_volatility|default:''|escapejs }}"
+               data-gmv-y="{{ annual.gmv_return|default:''|escapejs }}"
+               data-msr-x="{{ annual.msr_volatility|default:''|escapejs }}"
+               data-msr-y="{{ annual.msr_return|default:''|escapejs }}"
+               style="display:none"></div>
+
+          <!-- Provide raw JSON payloads in application/json script tags to avoid attribute escaping issues -->
+          <script id="frontier-json" type="application/json">{{ safe_frontier|default:'[]'|safe }}</script>
+          <script id="assets-json" type="application/json">{{ safe_assets|default:'[]'|safe }}</script>
+        </div>
+
+        <!-- Button bar: Back / Export / Run Again -->
+        <div class="btn-bar" role="group" aria-label="Chart actions">
+          <a href="/optimizer/" class="btn-glass" title="Back to Optimizer">Back to Optimizer</a>
+          <button type="button" class="btn-glass" id="export-pdf-btn" title="Export to PDF">Export to PDF</button>
+          <button type="button" class="btn-glass" id="run-again-btn" title="Run Again">Run Again</button>
+        </div>
+
+        <script>
+        (function(){
+          try{
+            const exportBtn = document.getElementById('export-pdf-btn');
+            const runBtn = document.getElementById('run-again-btn');
+            if(exportBtn) exportBtn.addEventListener('click', function(e){ e.preventDefault(); window.print(); });
+            if(runBtn) runBtn.addEventListener('click', function(e){ e.preventDefault(); window.location.reload(); });
+          }catch(err){ console.warn('button bar init failed', err); }
+        })();
+        </script>
+
+        <footer class="site-footer">
+          Built by Mannu • GitHub: <a href="https://github.com/Ayano444" target="_blank" rel="noopener noreferrer">@Ayano444</a>
+        </footer>
+
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Correlation matrix show/hide toggle
+    (function(){
+      try{
+        const cb = document.getElementById('show-corr-checkbox');
+        const wrapper = document.getElementById('corr-wrapper');
+        if(cb && wrapper){
+          cb.addEventListener('change', function(){
+            if(this.checked){ wrapper.style.display = 'block'; setTimeout(()=> wrapper.style.opacity = '1', 10); }
+            else { wrapper.style.opacity = '0'; setTimeout(()=> wrapper.style.display = 'none', 300); }
+          });
+        }
+      }catch(e){console.warn('corr toggle init failed', e)}
+    })();
+
+    // Build chart using data-attributes populated by Django (escaped)
+    document.addEventListener('DOMContentLoaded', function(){
+      (function(){
+        function safeParseJSON(s){
+          if(!s) return [];
+          // Fast path
+          try{ return JSON.parse(s); }catch(e){
+            // Tolerant fallback: sometimes the string may contain single-quoted objects
+            try{
+              const alt = s.replace(/\r?\n/g,'').trim();
+              // If it looks like it's wrapped in single quotes, strip them
+              const stripped = (alt[0] === "'" && alt[alt.length-1] === "'") ? alt.slice(1, -1) : alt;
+              const swapped = stripped.replace(/\'/g, '"');
+              return JSON.parse(swapped);
+            }catch(e2){
+              console.warn('safeParseJSON failed', e, e2);
+              return [];
+            }
+          }
+        }
+
+        try{
+          const container = document.getElementById('frontier-data');
+          // Prefer reading the raw JSON from <script type="application/json"> to avoid escaping issues
+          const rawFrontierEl = document.getElementById('frontier-json');
+          const rawAssetsEl = document.getElementById('assets-json');
+          const rawFrontier = rawFrontierEl ? rawFrontierEl.textContent : (container ? container.getAttribute('data-frontier') : null);
+          const rawAssets   = rawAssetsEl ? rawAssetsEl.textContent : (container ? container.getAttribute('data-assets') : null);
+          const rawGmvX = container ? container.getAttribute('data-gmv-x') : null;
+          const rawGmvY = container ? container.getAttribute('data-gmv-y') : null;
+          const rawMsrX = container ? container.getAttribute('data-msr-x') : null;
+          const rawMsrY = container ? container.getAttribute('data-msr-y') : null;
+
+          // Parse numeric datasets and use values exactly as provided by backend (no rescaling)
+          const frontier = safeParseJSON(rawFrontier);
+          const assets = safeParseJSON(rawAssets);
+
+          const gmv = (rawGmvX && rawGmvY) ? { x: Number(rawGmvX), y: Number(rawGmvY) } : null;
+          const msr = (rawMsrX && rawMsrY) ? { x: Number(rawMsrX), y: Number(rawMsrY) } : null;
+
+          const canvas = document.getElementById('frontierChart');
+          if(!canvas){ console.warn('frontierChart canvas not found'); return; }
+          const ctx = canvas.getContext('2d');
+
+          // Helpers to transform annual percent data into requested frequency
+          function getFactors(freq){
+            if(freq === 'daily') return {ret: 1.0/252.0, vol: 1.0/Math.sqrt(252.0)};
+            if(freq === 'monthly') return {ret: 1.0/12.0, vol: 1.0/Math.sqrt(12.0)};
+            return {ret: 1.0, vol: 1.0}; // annual
+          }
+
+          function transformedDataFor(freq){
+            const f = getFactors(freq);
+            const tFront = frontier.map(p => ({ x: Number((p.x * f.vol).toFixed(6)), y: Number((p.y * f.ret).toFixed(6)) }));
+            const tAssets = assets.map(p => ({ x: Number((p.x * f.vol).toFixed(6)), y: Number((p.y * f.ret).toFixed(6)) }));
+            const tGmv = gmv ? { x: Number((gmv.x * f.vol).toFixed(6)), y: Number((gmv.y * f.ret).toFixed(6)) } : null;
+            const tMsr = msr ? { x: Number((msr.x * f.vol).toFixed(6)), y: Number((msr.y * f.ret).toFixed(6)) } : null;
+            return { tFront, tAssets, tGmv, tMsr };
+          }
+
+          const datasets = [];
+          if(frontier.length){
+            datasets.push({
+              label: 'Efficient Frontier',
+              data: frontier,
+              type: 'line',
+              borderColor: '#00eaff',
+              backgroundColor: 'transparent',
+              borderWidth: 3,
+              tension: 0.25,
+              pointRadius: 0,
+              pointBackgroundColor: '#00eaff',
+              order: 1
+            });
+          } else {
+            console.warn('Efficient frontier has no data to plot');
+          }
+
+          if(assets.length){ datasets.push({ label: 'Assets', data: assets, backgroundColor: 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.35)', pointRadius: 5, order: 0 }); }
+          if(gmv){ datasets.push({ label: 'GMV', data: [gmv], backgroundColor: '#6366f1', borderColor: '#ffffff', pointRadius: 8, pointHoverRadius: 10, order: 0 }); }
+          if(msr){ datasets.push({ label: 'Max Sharpe', data: [msr], backgroundColor: '#10b981', borderColor: '#ffffff', pointRadius: 8, pointHoverRadius: 10, order: 0 }); }
+
+          // Build combined domain from frontier, assets, GMV and MSR (ensure xMin/xMax/yMin/yMax are defined)
+          const domainX = []
+            .concat(
+              frontier && frontier.length ? frontier.map(p => p.x) : [],
+              assets && assets.length ? assets.map(p => p.x) : [],
+              gmv ? [gmv.x] : [],
+              msr ? [msr.x] : []
+            )
+            .filter(v => typeof v === 'number' && isFinite(v));
+
+          const domainY = []
+            .concat(
+              frontier && frontier.length ? frontier.map(p => p.y) : [],
+              assets && assets.length ? assets.map(p => p.y) : [],
+              gmv ? [gmv.y] : [],
+              msr ? [msr.y] : []
+            )
+            .filter(v => typeof v === 'number' && isFinite(v));
+
+          let xMin = undefined, xMax = undefined, yMin = undefined, yMax = undefined;
+          if(domainX.length){
+            const xLo = Math.min(...domainX);
+            const xHi = Math.max(...domainX);
+            const spanX = xHi - xLo;
+            if(spanX === 0){
+              xMin = xLo - 1;
+              xMax = xHi + 1;
+            } else {
+              const padX = spanX * 0.08; // fixed 8% padding
+              xMin = xLo - padX;
+              xMax = xHi + padX;
+            }
+          }
+          if(domainY.length){
+            const yLo = Math.min(...domainY);
+            const yHi = Math.max(...domainY);
+            const spanY = yHi - yLo;
+            if(spanY === 0){
+              yMin = yLo - 1;
+              yMax = yHi + 1;
+            } else {
+              const padY = spanY * 0.08; // fixed 8% padding
+              yMin = yLo - padY;
+              yMax = yHi + padY;
+            }
+          }
+
+
+          const chart = new Chart(ctx, {
+             type: 'scatter',
+             data: { datasets },
+             options: {
+               plugins: { legend: { labels: { color: '#fff' } } },
+               scales: {
+                 x: {
+                     title: { display: true, text: "Volatility (%)", color: "#fff" },
+                     min: xMin,
+                     max: xMax,
+                     ticks: { color: "#fff" }
+                 },
+                 y: {
+                     title: { display: true, text: "Return (%)", color: "#fff" },
+                     min: yMin,
+                     max: yMax,
+                     ticks: { color: "#fff" }
+                 }
+               },
+               elements: { point: { hoverRadius: 6 } },
+               responsive: true,
+               maintainAspectRatio: false
+             }
+           });
+
+          // Frequency toggle logic
+          const freqBtns = document.querySelectorAll('.freq-toggle .freq-btn');
+          function setActiveBtn(target){ freqBtns.forEach(b=>b.classList.toggle('active', b===target)); }
+
+          function applyFrequency(freq){
+            // update KPIs
+            try{
+              const gmvEl = document.getElementById('gmv-value');
+              const msrEl = document.getElementById('msr-value');
+              const sharpeEl = document.getElementById('msr-sharpe');
+              if(gmvEl){
+                const val = (freq==='daily') ? Number(gmvEl.dataset.daily) : (freq==='monthly' ? Number(gmvEl.dataset.annual)/12.0 : Number(gmvEl.dataset.annual));
+                gmvEl.textContent = val.toFixed(2) + '%';
+              }
+              if(msrEl){
+                const val = (freq==='daily') ? Number(msrEl.dataset.daily) : (freq==='monthly' ? Number(msrEl.dataset.annual)/12.0 : Number(msrEl.dataset.annual));
+                msrEl.textContent = val.toFixed(2) + '%';
+              }
+              if(sharpeEl){
+                const val = (freq==='daily') ? Number(sharpeEl.dataset.daily) : (freq==='monthly' ? Number(sharpeEl.dataset.annual)/Math.sqrt(12.0) : Number(sharpeEl.dataset.annual));
+                sharpeEl.textContent = val.toFixed(2);
+              }
+            }catch(e){console.warn('KPI update failed', e)}
+
+            // update chart data
+            const { tFront, tAssets, tGmv, tMsr } = transformedDataFor(freq);
+            const newDatasets = [];
+            if(tFront && tFront.length){ newDatasets.push({ label: 'Efficient Frontier', data: tFront, type:'line', borderColor:'#00eaff', backgroundColor:'transparent', borderWidth:3, tension:0.25, pointRadius:0, order:1 }); }
+            if(tAssets && tAssets.length){ newDatasets.push({ label:'Assets', data:tAssets, backgroundColor:'rgba(255,255,255,0.35)', borderColor:'rgba(255,255,255,0.35)', pointRadius:5, order:0 }); }
+            if(tGmv){ newDatasets.push({ label:'GMV', data:[tGmv], backgroundColor:'#6366f1', borderColor:'#ffffff', pointRadius:8, order:0 }); }
+            if(tMsr){ newDatasets.push({ label:'Max Sharpe', data:[tMsr], backgroundColor:'#10b981', borderColor:'#ffffff', pointRadius:8, order:0 }); }
+
+            chart.data.datasets = newDatasets;
+            // update y-axis title to indicate frequency
+            const titleMap = { daily: 'Return (%) — Daily', monthly: 'Return (%) — Monthly', annual: 'Return (%) — Annual' };
+            if(chart.options && chart.options.scales && chart.options.scales.y && chart.options.scales.y.title){ chart.options.scales.y.title.text = titleMap[freq] || 'Return (%)'; }
+            chart.update();
+          }
+
+          // Wire buttons
+          document.querySelectorAll('.freq-toggle .freq-btn').forEach(btn => {
+            btn.addEventListener('click', function(){
+              setActiveBtn(this);
+              const f = this.dataset.freq || 'annual';
+              applyFrequency(f);
+            });
+          });
+
+          // initialize default
+          (function(){ const defaultBtn = document.querySelector('.freq-toggle .freq-btn.active') || document.querySelector('.freq-toggle .freq-btn[data-freq="annual"]'); if(defaultBtn){ applyFrequency(defaultBtn.dataset.freq || 'annual'); }})();
+
+         }catch(e){ console.error('Frontier chart build error', e); }
+       })();
+     });
+     </script>
+</body>
+</html>

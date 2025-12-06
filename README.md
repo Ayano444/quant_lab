@@ -13,10 +13,13 @@ A growing collection of quantitative finance projects built from scratch.
 - Full implementation inside `projects/portfolio_optimization`
 
 ### Structure
-utils/ → core reusable finance functions
-projects/ → full project folders
-notebooks/ → experimentation and tests
-data/ → raw or downloaded datasets
+quant_lab/
+│
+├── utils/ # core reusable finance functions
+├── projects/ # full project folders
+├── notebooks/ # experimentation and tests
+├── data/ # raw or downloaded datasets
+└── requirements.txt # project dependencies
 
 
 ## 🔹 Requirements

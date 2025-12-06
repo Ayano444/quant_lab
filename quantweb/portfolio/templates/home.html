@@ -1,0 +1,1055 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mannu's Quant Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link href="https://unpkg.com/lucide@latest/font/lucide.css" rel="stylesheet">
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <!-- Sparkline Charts -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --secondary: #10b981;
+            --text: #f3f4f6;
+            --text-secondary: #9ca3af;
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-glass: rgba(30, 41, 59, 0.7);
+            --border: rgba(255, 255, 255, 0.1);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+            --success: #10b981;
+            --danger: #ef4444;
+            --skeleton: rgba(255, 255, 255, 0.1);
+            --skeleton-wave: rgba(255, 255, 255, 0.05);
+            --card-bg: var(--bg-glass);
+            --card-border: var(--border);
+            --text-primary: var(--text);
+            --text-secondary: #9ca3af;
+        }
+
+        /* Light Theme */
+        [data-theme="light"] {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --secondary: #0d9488;
+            --text: #1f2937;
+            --text-secondary: #4b5563;
+            --bg-primary: #f9fafb;
+            --bg-secondary: #e5e7eb;
+            --bg-glass: rgba(255, 255, 255, 0.7);
+            --border: rgba(0, 0, 0, 0.1);
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            --success: #10b981;
+            --danger: #ef4444;
+            --skeleton: rgba(0, 0, 0, 0.05);
+            --skeleton-wave: rgba(0, 0, 0, 0.03);
+            --card-bg: white;
+            --card-border: rgba(0, 0, 0, 0.1);
+            --text-primary: #111827;
+            --text-secondary: #4b5563;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%);
+            color: var(--text);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            animation: fadeIn 0.8s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* SIDEBAR STYLES */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 260px;
+            background: var(--bg);
+            border-right: 1px solid var(--border);
+            z-index: 100;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            padding-top: 60px;
+            transform: translateX(-220px);
+        }
+
+        .sidebar:hover {
+            transform: translateX(0);
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        @media (min-width: 1024px) {
+            .main-content {
+                margin-left: 40px;
+                transition: margin-left 0.3s ease;
+            }
+            
+            .sidebar:hover + .main-content {
+                margin-left: 280px;
+            }
+        }
+
+        .sidebar-header {
+            padding: 0 10px 20px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar h2 {
+            color: var(--text);
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            padding: 12px 16px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            text-decoration: none;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+        }
+
+        .sidebar a i, 
+        .sidebar a .icon {
+            width: 24px;
+            margin-right: 12px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar a:hover, 
+        .sidebar a.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--text);
+            transform: translateX(4px);
+        }
+
+        .sidebar a.active {
+            background: #1e40af; /* Dark blue background for active state */
+            color: white !important;
+            transform: translateX(4px);
+            border-radius: 8px;
+        }
+
+        .sidebar a:hover i, 
+        .sidebar a:hover .icon {
+            color: var(--primary);
+        }
+
+        .sidebar a.active i,
+        .sidebar a.active .icon {
+            color: white !important; /* White icon for active state */
+        }
+
+        /* MAIN CONTENT */
+        .main {
+            margin-left: 280px;
+            padding: 2rem;
+            transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+            min-height: 100vh;
+            flex: 1;
+        }
+
+        .main.sidebar-hidden {
+            margin-left: 40px;
+        }
+
+        /* HERO SECTION */
+        .hero-section {
+            background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(16, 185, 129, 0.1));
+            border-radius: 20px;
+            padding: 3rem 2rem;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            border: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+        }
+
+        .hero-content {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .hero-text {
+            max-width: 70%;
+        }
+
+        .kpi-container {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            background: rgba(30, 41, 59, 0.5);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+            min-width: 200px;
+        }
+
+        .kpi-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            color: var(--text-secondary);
+        }
+
+        .kpi-value {
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .kpi-up {
+            color: var(--success);
+            margin-left: 5px;
+        }
+
+        .kpi-down {
+            color: var(--danger);
+            margin-left: 5px;
+        }
+
+        .hero-title {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #ffffff, #d7d7d7);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            line-height: 1.2;
+            text-align: left;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-secondary);
+            max-width: 700px;
+            margin: 0 0 2rem;
+            line-height: 1.6;
+            text-align: left;
+        }
+
+        /* CARDS */
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin: 3rem 0 2rem; /* Increased top margin to 3rem */
+            padding: 0.5rem;
+        }
+
+        .card-link {
+            text-decoration: none;
+            display: block;
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+
+        .card-link:hover {
+            transform: translateY(-5px);
+        }
+
+        .card {
+            background: var(--bg-glass);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            border: 1px solid transparent;
+            background: 
+                linear-gradient(var(--bg-glass), var(--bg-glass)) padding-box,
+                linear-gradient(135deg, rgba(99, 102, 241, 0.3), rgba(16, 185, 129, 0.1)) border-box;
+        }
+
+        .card-link:hover .card {
+            transform: scale(1.03);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+            opacity: 0.8;
+            transition: all 0.3s ease;
+        }
+
+        .card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .card-icon {
+            font-size: 2rem;
+            margin-bottom: 1.25rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+        }
+
+        .card-link:hover .card-icon {
+            transform: scale(1.1);
+        }
+
+        .card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: var(--text);
+            transition: color 0.3s ease;
+        }
+
+        .card-link:hover .card h3 {
+            color: var(--primary);
+        }
+
+        .card p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            transition: color 0.3s ease;
+        }
+
+        .card-arrow {
+            position: absolute;
+            right: 0;
+            bottom: 0;
+            width: 30px;
+            height: 30px;
+            background: var(--primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            opacity: 0;
+            transform: translateX(-10px);
+            transition: all 0.3s ease;
+        }
+
+        .card-link:hover .card-arrow {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* MARKET SNAPSHOT */
+        .market-snapshot {
+            margin-top: 3rem;
+            background: var(--bg-glass);
+            border-radius: 16px;
+            padding: 2rem;
+            border: 1px solid var(--border);
+        }
+
+        .market-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .last-updated {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin: 0;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .ticker-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .ticker-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: 12px;
+            padding: 1.25rem;
+            transition: all 0.3s ease;
+        }
+
+        .ticker-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .ticker-name {
+            font-weight: 600;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .ticker-price {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text);
+        }
+
+        .ticker-change {
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .positive {
+            color: var(--success);
+        }
+
+        .negative {
+            color: var(--danger);
+        }
+
+        /* FOOTER */
+        .footer {
+            text-align: center;
+            padding: 1.5rem 1rem;
+            margin-top: 4rem;
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            border-top: 1px solid var(--border);
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .footer a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: color 0.3s ease;
+        }
+
+        .footer a:hover {
+            color: var(--secondary);
+            text-decoration: underline;
+        }
+
+        .footer-quote {
+            font-style: italic;
+            margin-top: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        /* ANIMATIONS */
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 1024px) {
+            .main {
+                margin-left: 40px;
+                padding: 1.5rem;
+            }
+
+            .hero-content {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+
+            .hero-text {
+                max-width: 100%;
+            }
+
+            .kpi-container {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: space-between;
+            }
+
+            .kpi-item {
+                min-width: 45%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2.25rem;
+            }
+
+            .hero-subtitle {
+                font-size: 1rem;
+            }
+
+            .card-grid {
+                grid-template-columns: 1fr;
+                gap: 1.25rem;
+            }
+
+            .ticker-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+
+            .kpi-item {
+                min-width: 100%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .main {
+                padding: 1rem;
+                margin-left: 0;
+            }
+
+            .hero-section {
+                padding: 2rem 1.5rem;
+            }
+
+            .hero-title {
+                font-size: 2rem;
+            }
+
+            .ticker-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .section-title {
+                font-size: 1.25rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- SIDEBAR REVEAL ZONE -->
+    <div id="hover-zone" class="sidebar-hover-zone"></div>
+
+    <!-- SIDEBAR -->
+    <div id="sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h2>Mannu's Quant Lab</h2>
+        </div>
+        <nav class="sidebar-nav">
+            <a href="/" class="active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="/optimize/">
+                <i class="fas fa-chart-line"></i>
+                <span>Portfolio Optimizer</span>
+            </a>
+            <a href="/option-sell/">
+                <i class="fas fa-arrow-trend-down"></i>
+                <span>Option Selling Simulator</span>
+            </a>
+            <a href="/backtest/">
+                <i class="fas fa-chart-candlestick"></i>
+                <span>Options Backtester</span>
+            </a>
+            <a href="/timeseries/">
+                <i class="fas fa-wave-square"></i>
+                <span>Time Series Models</span>
+            </a>
+            <a href="https://github.com/Ayano444" target="_blank" rel="noopener noreferrer">
+                <i class="fab fa-github"></i>
+                <span>GitHub</span>
+            </a>
+        </nav>
+    </div>
+
+    <!-- MAIN CONTENT -->
+    <div id="main" class="main">
+        <!-- HERO SECTION -->
+        <section class="hero-section">
+            <div class="hero-content">
+                <div class="hero-text">
+                    <h1 class="hero-title">QuantLab Studio</h1>
+                    <p class="hero-subtitle">
+                        Real market data. Smart analytics. Advanced tools for modern quantitative traders and investors.
+                    </p>
+                </div>
+                <div class="kpi-container">
+                    <div class="kpi-item">
+                        <span>VIX</span>
+                        <span class="kpi-value">12.37 <i class="kpi-down">↓</i></span>
+                    </div>
+                    <div class="kpi-item">
+                        <span>US 10Y Yield</span>
+                        <span class="k-value">4.21%</span>
+                    </div>
+                    <div class="kpi-item">
+                        <span>Crude Oil</span>
+                        <span class="kpi-value">72.13 <i class="kpi-up">↑</i></span>
+                    </div>
+                    <div class="kpi-item">
+                        <span>BTC</span>
+                        <span class="kpi-value">$96,200 <i class="kpi-up">↑</i></span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TOOLS GRID -->
+        <div class="card-grid">
+            <a href="/optimize/" class="card-link">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Portfolio Optimizer</h3>
+                        <p>Optimize your portfolio with GMV, Max Sharpe, and efficient frontier analysis.</p>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/option-sell/" class="card-link">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-icon">
+                            <i class="fas fa-arrow-trend-down"></i>
+                        </div>
+                        <h3>Option Selling Simulator</h3>
+                        <p>Simulate option selling strategies with detailed drawdown and P&L analysis.</p>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/backtest/" class="card-link">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-candlestick"></i>
+                        </div>
+                        <h3>Options Backtester</h3>
+                        <p>Backtest options strategies on NIFTY and BANKNIFTY with comprehensive analytics.</p>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+
+            <a href="/timeseries/" class="card-link">
+                <div class="card">
+                    <div class="card-content">
+                        <div class="card-icon">
+                            <i class="fas fa-wave-square"></i>
+                        </div>
+                        <h3>Time Series Models</h3>
+                        <p>Advanced time series forecasting with ARIMA, GARCH, and other statistical models.</p>
+                        <div class="card-arrow">
+                            <i class="fas fa-arrow-right"></i>
+                        </div>
+                    </div>
+                </div>
+            </a>
+        </div>
+
+        <!-- MARKET SNAPSHOT -->
+        <section class="market-snapshot">
+            <div class="market-header">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Live Market Snapshot (U.S.)
+                </h2>
+                <div class="last-updated">Last Updated: <span id="lastUpdated">{{ timestamp|default:"Just now" }}</span></div>
+            </div>
+            <div class="ticker-grid" id="marketTickers">
+                <div class="ticker-card">
+                    <div class="ticker-name">
+                        <span>AAPL</span>
+                        <i class="fab fa-apple"></i>
+                    </div>
+                    <div class="ticker-price" id="aapl">$0.00</div>
+                    <div class="ticker-change" id="aapl-change">-</div>
+                </div>
+                <div class="ticker-card">
+                    <div class="ticker-name">
+                        <span>MSFT</span>
+                        <i class="fab fa-microsoft"></i>
+                    </div>
+                    <div class="ticker-price" id="msft">$0.00</div>
+                    <div class="ticker-change" id="msft-change">-</div>
+                </div>
+                <div class="ticker-card">
+                    <div class="ticker-name">
+                        <span>GOOGL</span>
+                        <i class="fab fa-google"></i>
+                    </div>
+                    <div class="ticker-price" id="googl">$0.00</div>
+                    <div class="ticker-change" id="googl-change">-</div>
+                </div>
+                <div class="ticker-card">
+                    <div class="ticker-name">
+                        <span>AMZN</span>
+                        <i class="fab fa-amazon"></i>
+                    </div>
+                    <div class="ticker-price" id="amzn">$0.00</div>
+                    <div class="ticker-change" id="amzn-change">-</div>
+                </div>
+            </div>
+        </section>
+
+        <!-- MARKET CHART -->
+        <section class="market-snapshot mt-5">
+            <div class="market-header">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Market Chart
+                </h2>
+                <div class="last-updated">
+                    <select id="symbolSelect" class="form-select form-select-sm" style="width: auto; display: inline-block;">
+                        <option value="AAPL">AAPL</option>
+                        <option value="MSFT">MSFT</option>
+                        <option value="GOOGL">GOOGL</option>
+                        <option value="AMZN">AMZN</option>
+                        <option value="META">META</option>
+                        <option value="TSLA">TSLA</option>
+                    </select>
+                </div>
+            </div>
+            <div class="market-box">
+                <div id="tvchart" style="height: 500px; border-radius: 12px;"></div>
+            </div>
+        </section>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="footer">
+        <div>Built by Mannu • Django + Python + TradingView • v1.0 (Dec 2025)</div>
+        <div class="footer-quote">"Markets are random. Your code shouldn't be."</div>
+    </footer>
+
+    <!-- TradingView Widget -->
+    <script src="https://s3.tradingview.com/tv.js"></script>
+    
+    <script>
+    const API_KEY = "04B6PS6X6ETD3ARF";
+    let lastUpdated = document.getElementById('lastUpdated');
+    let widget; // TradingView widget instance
+
+    // Update timestamp
+    function updateTimestamp() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+        });
+        lastUpdated.textContent = timeString;
+    }
+
+    // Format number with commas and 2 decimal places
+    function formatNumber(num) {
+        return parseFloat(num).toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    }
+
+    // Format percentage change
+    function formatChange(change, percentChange) {
+        const isPositive = parseFloat(change) >= 0;
+        const changeSymbol = isPositive ? '+' : '';
+        const changeClass = isPositive ? 'positive' : 'negative';
+        
+        return `<span class="${changeClass}">${changeSymbol}${parseFloat(change).toFixed(2)} (${changeSymbol}${Math.abs(parseFloat(percentChange)).toFixed(2)}%)</span>`;
+    }
+
+    // Update ticker price with animation
+    function updateTicker(ticker, data) {
+        const priceElement = document.getElementById(ticker.toLowerCase());
+        const changeElement = document.getElementById(`${ticker.toLowerCase()}-change`);
+
+        if (!priceElement || !changeElement) return;
+
+        const currentPrice = parseFloat(priceElement.textContent.replace(/[^0-9.-]+/g, ""));
+        const newPrice = parseFloat(data['05. price']);
+        const change = parseFloat(data['09. change']);
+        const percentChange = parseFloat(data['10. change percent'].replace('%', ''));
+
+        // Only animate if price has changed
+        if (currentPrice !== newPrice) {
+            priceElement.style.transition = 'color 0.5s ease';
+            priceElement.style.color = newPrice > currentPrice ? 'var(--success)' : 'var(--danger)';
+            
+            setTimeout(() => {
+                priceElement.textContent = `$${formatNumber(newPrice)}`;
+                priceElement.style.color = 'var(--text)';
+            }, 250);
+        } else {
+            priceElement.textContent = `$${formatNumber(newPrice)}`;
+        }
+
+        changeElement.innerHTML = formatChange(change, percentChange);
+    }
+
+    // Fetch stock data from Alpha Vantage with retry logic
+    async function fetchStockData(symbol, retries = 3, delay = 1000) {
+        const url = `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${API_KEY}`;
+        
+        for (let i = 0; i < retries; i++) {
+            try {
+                const response = await fetch(url);
+                const data = await response.json();
+                
+                if (data['Global Quote'] && data['Global Quote']['05. price']) {
+                    return data['Global Quote'];
+                }
+                
+                // If we get a rate limit response, wait and retry
+                if (data.Note || data.Information) {
+                    await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+                    continue;
+                }
+                
+                return null;
+            } catch (error) {
+                console.error(`Error fetching ${symbol}:`, error);
+                if (i === retries - 1) return null;
+                await new Promise(resolve => setTimeout(resolve, delay * (i + 1)));
+            }
+        }
+        return null;
+    }
+
+    // Update a single ticker with error handling
+    async function fetchAndUpdateTicker(symbol) {
+        try {
+            const data = await fetchStockData(symbol);
+            if (data) {
+                updateTicker(symbol, data);
+            }
+        } catch (error) {
+            console.error(`Error updating ${symbol}:`, error);
+        }
+    }
+
+    // Update all market data with staggered loading
+    function updateMarketData() {
+        const tickers = ['AAPL', 'MSFT', 'GOOGL', 'AMZN'];
+        
+        // Stagger the API calls to avoid rate limiting
+        tickers.forEach((ticker, index) => {
+            setTimeout(() => {
+                fetchAndUpdateTicker(ticker);
+            }, index * 500); // 500ms delay between each request
+        });
+    }
+
+    // Load TradingView chart
+    function loadChart(symbol) {
+        if (widget) widget.remove();
+        widget = new TradingView.widget({
+            container_id: "tvchart",
+            symbol: symbol,
+            autosize: true,
+            theme: "dark",
+            interval: "D",
+            style: "1",
+            locale: "en",
+            hide_side_toolbar: false,
+            allow_symbol_change: false,
+            enable_publishing: false,
+            hide_volume: true,
+            studies: ["RSI@tv-basicstudies"],
+            disabled_features: ["header_widget", "left_toolbar"],
+            enabled_features: ["header_indicators"]
+        });
+    }
+
+    // Initial data load
+    document.addEventListener('DOMContentLoaded', () => {
+        // Initialize sidebar
+        const sidebar = document.getElementById("sidebar");
+        const hoverZone = document.getElementById("hover-zone");
+        const mainContent = document.getElementById("main");
+        
+        // Toggle sidebar on hover zone hover (desktop)
+        if (hoverZone) {
+            hoverZone.addEventListener('mouseenter', function() {
+                if (window.innerWidth > 1024) {
+                    sidebar.style.transform = 'translateX(0)';
+                    mainContent.style.marginLeft = '280px';
+                }
+            });
+            
+            hoverZone.addEventListener('mouseleave', function() {
+                if (window.innerWidth > 1024) {
+                    sidebar.style.transform = 'translateX(-220px)';
+                    mainContent.style.marginLeft = '40px';
+                }
+            });
+        }
+        
+        // Mobile menu toggle
+        const mobileMenuToggle = document.querySelector('.mobile-menu-toggle');
+        if (mobileMenuToggle) {
+            mobileMenuToggle.addEventListener('click', function(e) {
+                e.stopPropagation();
+                if (window.innerWidth <= 1024) {
+                    const isHidden = sidebar.style.transform === 'translateX(-100%)';
+                    sidebar.style.transform = isHidden ? 'translateX(0)' : 'translateX(-100%)';
+                }
+            });
+        }
+
+        // Load initial market data
+        updateMarketData();
+        
+        // Update market data every 30 seconds
+        setInterval(updateMarketData, 30000);
+        
+        // Also update when the tab becomes visible again
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                updateMarketData();
+            }
+        });
+
+        // Initialize chart with default symbol
+        loadChart("AAPL");
+
+        // Handle symbol change
+        document.getElementById("symbolSelect").addEventListener("change", (e) => {
+            loadChart(e.target.value);
+        });
+    });
+
+    // Update US market data
+    async function updateUSMarket() {
+        // Update the timestamp
+        updateTimestamp();
+        
+        // Update individual stock prices
+        const symbols = ['AAPL', 'MSFT', 'GOOGL', 'AMZN'];
+        for (const symbol of symbols) {
+            try {
+                const data = await fetchStockData(symbol);
+                if (data) {
+                    updateTicker(symbol, data);
+                }
+            } catch (error) {
+                console.error(`Error updating ${symbol}:`, error);
+            }
+        }
+    }
+
+    // Initial update
+    updateUSMarket();
+    // Update every 15 seconds
+    setInterval(updateUSMarket, 15000);
+    </script>
+    <!-- Theme Toggle Button -->
+    <button class="theme-toggle" id="themeToggle" aria-label="Toggle theme">
+        <i class="fas fa-moon" id="themeIcon"></i>
+    </button>
+
+    <!-- AOS Animation -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    
+    <script>
+    // Initialize AOS
+    AOS.init({
+        duration: 600,
+        once: true,
+        offset: 100
+    });
+
+    // Theme Toggle
+    const themeToggle = document.getElementById('themeToggle');
+    const themeIcon = document.getElementById('themeIcon');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let isDark = localStorage.getItem('theme') === 'dark' || 
+                 (!localStorage.getItem('theme') && prefersDark);
+
+    function setTheme(dark) {
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+        themeIcon.className = dark ? 'fas fa-sun' : 'fas fa-moon';
+        localStorage.setItem('theme', dark ? 'dark' : 'light');
+    }
+
+    themeToggle.addEventListener('click', () => {
+        isDark = !isDark;
+        setTheme(isDark);
+    });
+
+    // Set initial theme
+    setTheme(isDark);
+    </script>
+</body>
+</html>
